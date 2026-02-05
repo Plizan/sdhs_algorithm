@@ -3,9 +3,6 @@ using System.Collections.Generic;
 
 namespace Sdhs.Pathfinding.Core
 {
-    /// <summary>
-    /// 한 방향으로 쭉 가다가 막히면 시계방향으로 회전하는 단순 알고리즘 (매우 자주 실패)
-    /// </summary>
     public sealed class WallFollowerPathfinder : IPathfinder
     {
         private enum Direction { Up, Right, Down, Left }

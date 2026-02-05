@@ -274,6 +274,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Sdhs.Pathfinding.Unity.PathfindingHUD
   controller: {fileID: 167523374}
   showControls: 1
+  _fontSize: 50
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
