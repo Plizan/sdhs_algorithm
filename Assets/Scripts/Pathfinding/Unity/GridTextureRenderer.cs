@@ -53,7 +53,7 @@ namespace Sdhs.Pathfinding.Unity
                     if (!graph.IsBlocked(pos) && showCostTint)
                     {
                         float t = Mathf.InverseLerp(1f, Mathf.Max(1, maxCost), graph.Cost(pos));
-                        color = Color.Lerp(color, costTintColor, t * 0.5f);
+                        color = Color.Lerp(color, costTintColor, t);  // t가 클수록 어두워짐
                     }
 
                     if (visited[index])

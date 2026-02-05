@@ -31,8 +31,8 @@ namespace Sdhs.Pathfinding.Unity
             string status = result == null
                 ? "No result"
                 : result.Success
-                    ? $"Path {result.PathLength} / Cost {result.PathCost} / Visited {result.VisitedCount}"
-                    : $"No path / Visited {result.VisitedCount}";
+                    ? $"✓ Path found: Length={result.PathLength} | Cost={result.PathCost} | Visited={result.VisitedCount}"
+                    : $"✗ No path found | Visited={result.VisitedCount}";
 
             var start = controller.GetStart();
             var goal = controller.GetGoal();
@@ -41,7 +41,8 @@ namespace Sdhs.Pathfinding.Unity
                 $"Algorithm: {controller.GetAlgorithmLabel()}\n" +
                 $"Use case: {controller.GetUseCaseText()}\n" +
                 $"Start: ({start.x},{start.y}) Goal: ({goal.x},{goal.y})\n" +
-                $"{status}";
+                $"{status}\n" +
+                $"Search time: {controller.LastSearchTimeMs:F2}ms";
 
             if (showControls)
             {

@@ -8,7 +8,10 @@ namespace Sdhs.Pathfinding.Unity
     {
         BFS,
         Dijkstra,
-        AStar
+        AStar,
+        GreedyBestFirst,
+        DirectionalGreedy,
+        WallFollower
     }
 
     [DisallowMultipleComponent]
@@ -46,6 +49,7 @@ namespace Sdhs.Pathfinding.Unity
         private int _seedUsed;
         private Coroutine _animationCoroutine;
         private bool _isAnimating;
+        private float _lastSearchTimeMs;
 
         public PathResult LastResult => _lastResult;
         public AlgorithmType CurrentAlgorithm => algorithm;
@@ -53,6 +57,7 @@ namespace Sdhs.Pathfinding.Unity
         public int Width => width;
         public int Height => height;
         public bool IsAnimating => _isAnimating;
+        public float LastSearchTimeMs => _lastSearchTimeMs;
 
         private void Awake()
         {
@@ -92,6 +97,16 @@ namespace Sdhs.Pathfinding.Unity
             var rng = new System.Random(_seedUsed);
 
             _graph = new GridGraph(width, height, defaultCost: 1);
+
+            // 시작/도착 지점 랜덤 생성
+            start = new Vector2Int(rng.Next(0, width), rng.Next(0, height));
+            goal = new Vector2Int(rng.Next(0, width), rng.Next(0, height));
+            
+            // 시작과 도착이 너무 가까우면 다시 생성
+            while (Vector2Int.Distance(start, goal) < Mathf.Min(width, height) * 0.3f)
+            {
+                goal = new Vector2Int(rng.Next(0, width), rng.Next(0, height));
+            }
 
             var startPos = ToGridPos(start);
             var goalPos = ToGridPos(goal);
@@ -136,8 +151,13 @@ namespace Sdhs.Pathfinding.Unity
             var goalPos = ToGridPos(goal);
 
             var pathfinder = CreatePathfinder(algorithm);
-            var heuristic = algorithm == AlgorithmType.AStar ? (Heuristic)Heuristics.Manhattan : null;
+            var heuristic = (algorithm == AlgorithmType.AStar || algorithm == AlgorithmType.GreedyBestFirst) 
+                ? (Heuristic)Heuristics.Manhattan : null;
+            
+            var startTime = System.DateTime.Now;
             _lastResult = pathfinder.FindPath(_graph, startPos, goalPos, heuristic);
+            var endTime = System.DateTime.Now;
+            _lastSearchTimeMs = (float)(endTime - startTime).TotalMilliseconds;
 
             if (rendererTarget != null)
                 rendererTarget.Render(_graph, _lastResult, startPos, goalPos, maxCost);
@@ -150,8 +170,10 @@ namespace Sdhs.Pathfinding.Unity
             var goalPos = ToGridPos(goal);
 
             var pathfinder = CreatePathfinder(algorithm);
-            var heuristic = algorithm == AlgorithmType.AStar ? (Heuristic)Heuristics.Manhattan : null;
+            var heuristic = (algorithm == AlgorithmType.AStar || algorithm == AlgorithmType.GreedyBestFirst) 
+                ? (Heuristic)Heuristics.Manhattan : null;
 
+            var startTime = DateTime.Now;
             PathfindingStep lastStep = null;
 
             foreach (var step in pathfinder.FindPathSteps(_graph, startPos, goalPos, heuristic))
@@ -195,6 +217,9 @@ namespace Sdhs.Pathfinding.Unity
                     rendererTarget.Render(_graph, _lastResult, startPos, goalPos, maxCost);
             }
 
+            var endTime = DateTime.Now;
+            _lastSearchTimeMs = (float)(endTime - startTime).TotalMilliseconds;
+
             _isAnimating = false;
             _animationCoroutine = null;
         }
@@ -225,9 +250,12 @@ namespace Sdhs.Pathfinding.Unity
         {
             return algorithm switch
             {
-                AlgorithmType.BFS => "Use when all edges have equal cost; shortest by steps but ignores weights.",
-                AlgorithmType.Dijkstra => "Use for weighted maps; guarantees shortest cost but explores more.",
-                AlgorithmType.AStar => "Use for weighted maps with a good heuristic; faster, still optimal.",
+                AlgorithmType.BFS => "균등 비용 맵에서 최고 효율; 최단 경로 보장",
+                AlgorithmType.Dijkstra => "가중치 맵; 비용 고려하므로 BFS보다 느림",
+                AlgorithmType.AStar => "가중치 맵 + 휴리스틱; Dijkstra보다 빠르고 최적",
+                AlgorithmType.GreedyBestFirst => "거리만 봄; 빠르지만 최단 경로 보장 안 함",
+                AlgorithmType.DirectionalGreedy => "목표 방향으로만 직진; 막히면 실패 (가장 빠르지만 위험)",
+                AlgorithmType.WallFollower => "벽 따라가기 + 백트래킹; 비효율적",
                 _ => string.Empty
             };
         }
@@ -236,9 +264,12 @@ namespace Sdhs.Pathfinding.Unity
         {
             return algorithm switch
             {
-                AlgorithmType.BFS => "BFS",
-                AlgorithmType.Dijkstra => "Dijkstra",
-                AlgorithmType.AStar => "A*",
+                AlgorithmType.BFS => "BFS (너비 우선)",
+                AlgorithmType.Dijkstra => "Dijkstra (다익스트라)",
+                AlgorithmType.AStar => "A* (에이스타)",
+                AlgorithmType.GreedyBestFirst => "Greedy (그리디)",
+                AlgorithmType.DirectionalGreedy => "Dir.Greedy (방향 탐욕)",
+                AlgorithmType.WallFollower => "Wall Follower (벽 따라가기)",
                 _ => "Unknown"
             };
         }
@@ -255,6 +286,9 @@ namespace Sdhs.Pathfinding.Unity
                 AlgorithmType.BFS => new BFSPathfinder(),
                 AlgorithmType.Dijkstra => new DijkstraPathfinder(),
                 AlgorithmType.AStar => new AStarPathfinder(),
+                AlgorithmType.GreedyBestFirst => new GreedyBestFirstPathfinder(),
+                AlgorithmType.DirectionalGreedy => new DirectionalGreedyPathfinder(),
+                AlgorithmType.WallFollower => new WallFollowerPathfinder(),
                 _ => new BFSPathfinder()
             };
         }

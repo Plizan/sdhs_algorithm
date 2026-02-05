@@ -161,7 +161,7 @@ MonoBehaviour:
   goal: {x: 22, y: 22}
   algorithm: 2
   animateSteps: 1
-  stepDelay: 0
+  stepDelay: 0.002
   randomSeed: 11111
   randomizeSeedOnStart: 1
   rendererTarget: {fileID: 167523375}
